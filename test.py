@@ -42,11 +42,28 @@ def nucleic_acid_expand(dna_seq):
 
     return results
 
+
+import itertools
+# from line_profiler import profile
+
+expand_dict = {}
+
+def nucleic_acid_expand_product(dna_seq):
+    if dna_seq in expand_dict:
+        return expand_dict[dna_seq]
+    else:
+        bases = [ambiguity_symbol_dict[base] for base in dna_seq]
+        combinations = [''.join(comb) for comb in itertools.product(*bases)]
+        expand_dict[dna_seq] =
+    return combinations
+
+
 # Test 
 # print(nucleic_acid_count('AWCBN'))
 # print(nucleic_acid_expand('AWCBN'))
 
 #创建kmer序列与对应tf的字典
+# @profile
 def get_dict(seq):
     curr_dict = {}
     for k in range(2, 5):
@@ -60,7 +77,7 @@ def get_dict(seq):
             # curr_dict.update({ key: curr_dict[key]+1 })
             # curr_dict.update({ key1: curr_dict[key]+0.5, key2: curr_dict[key]+0.5 })
             # curr_dict.update({ lambda N: keyN: curr_dict[key]+1/N })
-            expand_result = nucleic_acid_expand(dna_seq=key)
+            expand_result = nucleic_acid_expand_product(dna_seq=key)
             for key in expand_result:
                 curr_dict[key] += 1/len(expand_result)
         
@@ -78,7 +95,7 @@ def feat2str(int_float_dict):
     #feat_str = str(label) + '\t' + feat_str 
     return feat_str
 
-folder_path_0 = '/home/nusri/下载/dna_feat/dataset/single_seq_nonprobiotic'
+folder_path_0 = './dataset/single_seq_nonprobiotic'
 label_0 = 0
 dirs_0 = [path for path in os.listdir(folder_path_0) if path.endswith('txt')]
 seq_list_0 = []
@@ -90,7 +107,7 @@ for input_file in dirs_0:
         seq_list_0.append(dna_seq)
         filename_list_0.append(input_file)
 
-folder_path_1 = '/home/nusri/下载/dna_feat/dataset/single_seq_probiotic'
+folder_path_1 = './dataset/single_seq_probiotic'
 label_1 = 1
 dirs_1 = [path for path in os.listdir(folder_path_1) if path.endswith('txt')]
 seq_list_1 = []
@@ -119,7 +136,7 @@ def get_feat_str_list(seq_list, filename_list):
         feat_str_list.append(feat_str)
     return feat_str_list
 
-with open('result_nonprobio.tsv', 'w') as f:
+with open('result_(non)probio.tsv', 'w') as f:
     for feat_str in get_feat_str_list(seq_list_0, filename_list_0):
         f.write(str(label_0) + '\t' + feat_str + '\n')
     for feat_str in get_feat_str_list(seq_list_1, filename_list_1):
