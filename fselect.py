@@ -521,9 +521,9 @@ def readdata(filename):
 		sample = {}
 		for e in elems[1:]:
 			points = e.split(":")
-			p0 = int( points[0].strip() )
-			p1 = float( points[1].strip() )
-			sample[p0] = p1
+			p0 = int( points[0].strip() )	
+			p1 = float( points[1].strip() )	
+			sample[p0] = p1					
 			if p0 > max_index:
 				max_index = p0
 		labels.append(float(elems[0]))
@@ -566,3 +566,4 @@ if if_predict_all :
 	predict_all()
 
 writelog("\nend: \n%s\n"%datetime.now())
+

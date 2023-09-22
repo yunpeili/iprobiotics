@@ -20,50 +20,27 @@ def all_possible_seq(k):
 
 
 ambiguity_symbol_dict = {
-    'A': {'A': 1}, 'T': {'T': 1}, 'C': {'C': 1}, 'G': {'G': 1},
-    'W': {'A': 0.5, 'T': 0.5}, 'S': {'C': 0.5, 'G': 0.5},
-    'M': {'A': 0.5, 'C': 0.5}, 'K': {'G': 0.5, 'T': 0.5},
-    'R': {'A': 0.5, 'G': 0.5}, 'Y': {'C': 0.5, 'T': 0.5},
-    'B': {'C': 1/3, 'G': 1/3, 'T': 1/3}, 'D': {'A': 1/3, 'G': 1/3, 'T': 1/3},
-    'H': {'A': 1/3, 'C': 1/3, 'T': 1/3}, 'V': {'A': 1/3, 'C': 1/3, 'G': 1/3},
-    'N': {'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25}
+    'A': ['A'], 'T': ['T'], 'C': ['C'], 'G': ['G'],
+    'W': ['A', 'T'], 'S': ['C', 'G'], 'M': ['A', 'C'], 
+    'K': ['G', 'T'], 'R': ['A', 'G'], 'Y': ['C', 'T'], 
+    'B': ['C', 'G', 'T'], 'D': ['A', 'G', 'T'], 
+    'H': ['A', 'C', 'T'], 'V': ['A', 'C', 'G'],
+    'N': ['A', 'C', 'G', 'T']
 }
 # e.g. 'W':['A', 'T'] --> 'A':0.5, 'T':0.5
 #      'D':['A', 'G', 'T'] --> 'A':1/3, 'G':1/3, 'T':1/3
 #      'A':['A'] --> 'A':1/1
 
-print(ambiguity_symbol_dict)
-
-def nucleic_acid_count(dna_seq):
-    result = {'A': 0.0, 'T': 0.0, 'C': 0.0, 'G': 0.0}
-
-    for char in dna_seq:
-        possib_chars = ambiguity_symbol_dict[char]
-
-        for pc, possibility in possib_chars.items():
-            result[pc] += possibility
-        
-    return result
+#print(ambiguity_symbol_dict)
 
 def nucleic_acid_expand(dna_seq):
-    result = ['']
-
+    results = ['']
     for base in dna_seq:
-        new_seqs = []
-        replacements = ambiguity_symbol_dict[base] # base='M' >>> {'A': 0.5, 'C': 0.5}
+        results = [ seq + new_seq 
+                  for seq in results 
+                    for new_seq in ambiguity_symbol_dict[base]]
 
-        for prev_seq in result:
-            if len(replacements) > 1:
-                for r in replacements.keys():
-                    new_seqs.append(prev_seq + r)
-            else:
-                new_seqs.append(prev_seq + base)
-
-        result = new_seqs
-
-    return result
-
-
+    return results
 
 # Test 
 # print(nucleic_acid_count('AWCBN'))
@@ -101,34 +78,49 @@ def feat2str(int_float_dict):
     #feat_str = str(label) + '\t' + feat_str 
     return feat_str
 
-folder_path = '/home/nusri/下载/dna_feat/dataset/merged_nonprobiotics'
-label = 0
-dirs = [path for path in os.listdir(folder_path) if path.endswith('txt')]
-seq_list = []
-filename_list =[]
-for input_file in dirs[:3]:
+folder_path_0 = '/home/nusri/下载/dna_feat/dataset/single_seq_nonprobiotic'
+label_0 = 0
+dirs_0 = [path for path in os.listdir(folder_path_0) if path.endswith('txt')]
+seq_list_0 = []
+filename_list_0 =[]
+for input_file in dirs_0:
 # for input_file in dirs:
-    with open(os.path.join(folder_path, input_file)) as seqs:
+    with open(os.path.join(folder_path_0, input_file)) as seqs:
         dna_seq = seqs.read()
-        seq_list.append(dna_seq)
-        filename_list.append(input_file)
+        seq_list_0.append(dna_seq)
+        filename_list_0.append(input_file)
 
+folder_path_1 = '/home/nusri/下载/dna_feat/dataset/single_seq_probiotic'
+label_1 = 1
+dirs_1 = [path for path in os.listdir(folder_path_1) if path.endswith('txt')]
+seq_list_1 = []
+filename_list_1 =[]
+for input_file in dirs_1:
+# for input_file in dirs:
+    with open(os.path.join(folder_path_1, input_file)) as seqs:
+        dna_seq = seqs.read()
+        seq_list_1.append(dna_seq)
+        filename_list_1.append(input_file)
 
-feat_str_list =[]
-for seq, filename in tqdm(zip(seq_list,filename_list),total=len(seq_list)):
-    feat_str = ''
-    try:
-        feat_dict = get_dict(seq)
-    except Exception as e:
-        print('ERROR: ', filename)
-        raise('ERROR')
-    #给kmer序列标号并创建字典
-    index_ATCG_map = {ATCG: int(i) for i, ATCG in enumerate(feat_dict.keys())}
-    #创建index和tf的字典
-    feat_dict = {index_ATCG_map[ATCG]: value for i, (ATCG, value) in enumerate(feat_dict.items())}
-    feat_str += feat2str(feat_dict)
-    feat_str_list.append(feat_str)
+def get_feat_str_list(seq_list, filename_list):
+    feat_str_list = []
+    for seq, filename in tqdm(zip(seq_list, filename_list), total=len(seq_list)):
+        feat_str = ''
+        try:
+            feat_dict = get_dict(seq)
+        except Exception as e:
+            print('ERROR: ', filename)
+            raise('ERROR')
+        #给kmer序列标号并创建字典
+        index_ATCG_map = {ATCG: int(i) for i, ATCG in enumerate(feat_dict.keys())}
+        #创建index和tf的字典
+        feat_dict = {index_ATCG_map[ATCG]: value for i, (ATCG, value) in enumerate(feat_dict.items())}
+        feat_str += feat2str(feat_dict)
+        feat_str_list.append(feat_str)
+    return feat_str_list
 
 with open('result_nonprobio.tsv', 'w') as f:
-    for feat_str in feat_str_list:
-        f.write(str(label) + '\t' + feat_str + '\n')
+    for feat_str in get_feat_str_list(seq_list_0, filename_list_0):
+        f.write(str(label_0) + '\t' + feat_str + '\n')
+    for feat_str in get_feat_str_list(seq_list_1, filename_list_1):
+        f.write(str(label_1) + '\t' + feat_str + '\n')
