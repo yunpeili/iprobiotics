@@ -54,7 +54,7 @@ def nucleic_acid_expand_product(dna_seq):
     else:
         bases = [ambiguity_symbol_dict[base] for base in dna_seq]
         combinations = [''.join(comb) for comb in itertools.product(*bases)]
-        expand_dict[dna_seq] =
+        expand_dict[dna_seq] = combinations
     return combinations
 
 
@@ -86,7 +86,7 @@ def get_dict(seq):
     for key in curr_dict.keys():                      
         l = len(seq) - len(key) + 1
         curr_dict[key] = curr_dict[key] / l           #计算tf
-    return(curr_dict)
+    return curr_dict
 
 def feat2str(int_float_dict):
     feat_str = ''
@@ -100,7 +100,7 @@ label_0 = 0
 dirs_0 = [path for path in os.listdir(folder_path_0) if path.endswith('txt')]
 seq_list_0 = []
 filename_list_0 =[]
-for input_file in dirs_0:
+for input_file in dirs_0[:10]:
 # for input_file in dirs:
     with open(os.path.join(folder_path_0, input_file)) as seqs:
         dna_seq = seqs.read()
@@ -119,25 +119,93 @@ for input_file in dirs_1:
         seq_list_1.append(dna_seq)
         filename_list_1.append(input_file)
 
-def get_feat_str_list(seq_list, filename_list):
-    feat_str_list = []
-    for seq, filename in tqdm(zip(seq_list, filename_list), total=len(seq_list)):
-        feat_str = ''
-        try:
-            feat_dict = get_dict(seq)
-        except Exception as e:
-            print('ERROR: ', filename)
-            raise('ERROR')
-        #给kmer序列标号并创建字典
-        index_ATCG_map = {ATCG: int(i) for i, ATCG in enumerate(feat_dict.keys())}
-        #创建index和tf的字典
-        feat_dict = {index_ATCG_map[ATCG]: value for i, (ATCG, value) in enumerate(feat_dict.items())}
-        feat_str += feat2str(feat_dict)
-        feat_str_list.append(feat_str)
-    return feat_str_list
 
-with open('result_(non)probio.tsv', 'w') as f:
-    for feat_str in get_feat_str_list(seq_list_0, filename_list_0):
+import multiprocessing as mp
+from multiprocessing import Pool, Queue, Manager, Process
+# num_process = mp.cpu_count()
+num_process = 2
+print(f'using {num_process} cores')
+
+
+def get_feat_str_list(seq_list, feat_str_list, queue):
+    for seq in seq_list:
+        feat_dict = get_dict(seq)
+    # #给kmer序列标号并创建字典
+    # index_ATCG_map = {ATCG: int(i) for i, ATCG in enumerate(feat_dict.keys())}
+    # #创建index和tf的字典
+    # feat_dict = {index_ATCG_map[ATCG]: value for i, (ATCG, value) in enumerate(feat_dict.items())}
+        feat_dict = {i: value for i, (ATCG, value) in enumerate(feat_dict.items())}
+        feat_str = feat2str(feat_dict)
+        feat_str_list.append(feat_str)
+        queue.put(1)
+
+def tqdm_listener(total:int, queue:Queue):
+    pbar = tqdm(total=total)
+    while True:
+        if not queue.empty():
+            k = queue.get()
+            if k == 1:
+                pbar.update(1)
+            else:
+                break
+    pbar.close()
+
+def process_feat(seq_list, filename_list):
+
+    manager = Manager()
+    # all_feat_str_list = manager.list()
+    feat_str_list = manager.list()
+    tqdm_queue = manager.Queue()
+    # iter_count = manager.Value('i', 0)
+    len(seq_list)
+
+    batch_size = len(seq_list) // num_process
+    batches = [seq_list[i:i+batch_size] for i in range(0, len(seq_list), batch_size)]
+
+    tqdm_process = Process(target=tqdm_listener, args=(len(seq_list), tqdm_queue))
+    tqdm_process.start()
+
+    # start all process
+    processes = []
+    for batch in batches:
+        p = Process(target=get_feat_str_list, args=(batch, feat_str_list, tqdm_queue))
+        processes.append(p)
+        p.start()
+
+    # wait all finish
+    for p in processes:
+        p.join()
+
+    tqdm_queue.put(-1)
+    tqdm_process.join()
+
+    # with Pool(processes=num_process) as pool:
+    #     results = []
+    #     for dna_seq in seq_list:
+    #         result = pool.apply_async(get_feat_str, args=(dna_seq, shared_expand_dict))
+    #         results.append(result)
+
+    #     with tqdm(total=len(seq_list)) as pbar:
+    #         for result in results:
+    #             feat_str_list.append(result.get())
+    #             pbar.update(1)
+
+            # for result in pool.imap(process_seq, seq_list):
+            
+    # pool.close()
+    # pool.join()
+
+    return list(feat_str_list)
+
+
+nonprobio_feat_list = process_feat(seq_list_0, filename_list_0)
+probio_feat_list = process_feat(seq_list_1, filename_list_1)
+
+with open('result_nonprobio.tsv', 'w') as f:
+    for feat_str in nonprobio_feat_list:
         f.write(str(label_0) + '\t' + feat_str + '\n')
-    for feat_str in get_feat_str_list(seq_list_1, filename_list_1):
+
+
+with open('result_probio.tsv', 'w') as f:
+    for feat_str in probio_feat_list:
         f.write(str(label_1) + '\t' + feat_str + '\n')
