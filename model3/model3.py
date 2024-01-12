@@ -2,7 +2,6 @@ import os
 from tqdm import tqdm
 from collections import Counter
 import json
-from sklearn.preprocessing import StandardScaler
 import statistics
 
 dna_list = ['A', 'G', 'T', 'C']
@@ -29,11 +28,6 @@ ambiguity_symbol_dict = {
     'H': ['A', 'C', 'T'], 'V': ['A', 'C', 'G'],
     'N': ['A', 'C', 'G', 'T']
 }
-# e.g. 'W':['A', 'T'] --> 'A':0.5, 'T':0.5
-#      'D':['A', 'G', 'T'] --> 'A':1/3, 'G':1/3, 'T':1/3
-#      'A':['A'] --> 'A':1/1
-
-#print(ambiguity_symbol_dict)
 
 def nucleic_acid_expand(dna_seq):
     results = ['']
@@ -134,7 +128,7 @@ def nucleic_acid_expand_product(dna_seq):
 ###first step of IFS, to generate our kmer:tf dictionary, prepared for abstracting the fine features
 # def get_dict(seq):
 #     init_dict = {}
-#     k = 7
+#     k = 9
 #     dna_segs = all_possible_seq(k)
 #     curr_dict = {seg:0 for seg in dna_segs}
 #     init_dict.update(curr_dict)
@@ -148,7 +142,7 @@ def nucleic_acid_expand_product(dna_seq):
 #     l = sum(init_dict.values())
 #     for key in init_dict.keys():
 #         init_dict[key] /= l
-
+    
 #     values = list(init_dict.values())
 #     mean = statistics.mean(values)
 #     std = statistics.stdev(values)
@@ -157,26 +151,16 @@ def nucleic_acid_expand_product(dna_seq):
 #         normalized_value = (value-mean)/std
 #         init_dict[key] = normalized_value
 
-#     return init_dict    
-
-    # values = list(init_dict.values())
-    # minv = min(values)
-    # maxv = max(values)
-    # for key in init_dict:
-    #     value = init_dict[key]
-    #     normalized_value = (value-minv)/(maxv-minv)
-    #     init_dict[key] = normalized_value
-
-    # return init_dict
+#     return init_dict
 
 ###11.2 version
 ###second step of IFS, to abastract the core features
 def get_dict(seq):
-    with open('/home/yunpei/probiotics/model1/v2_sorted_fine_feature5-8.json', 'r') as f:
+    with open('/home/yunpei/probiotics/model3/v2_sorted_fine_feature5-9.json', 'r') as f:
         fine_feature_list = json.load(f)
-        # fine_feature_list = fine_feature_list[:364]
+        fine_feature_list = fine_feature_list[:85]
     init_dict = {seg:0 for seg in fine_feature_list}
-    for k in range(5, 9):
+    for k in range(5, 10):
         for x in range(len(seq)-k+1):
             key = seq[x: x+k]
             if key not in init_dict.keys():
@@ -186,7 +170,7 @@ def get_dict(seq):
     l = sum(init_dict.values())
     for k in init_dict.keys():
         init_dict[k] /= l
-
+    
     values = list(init_dict.values())
     mean = statistics.mean(values)
     std = statistics.stdev(values)
@@ -205,7 +189,7 @@ def feat2str(int_float_dict):
     #feat_str = str(label) + '\t' + feat_str 
     return feat_str
 
-folder_path_0 = './dataset/test0'
+folder_path_0 = '/home/yunpei/probiotics/dataset/longest_pro_lacto'
 label_0 = 0
 dirs_0 = [path for path in sorted(os.listdir(folder_path_0))]
 seq_list_0 = []
@@ -217,7 +201,7 @@ for input_file in dirs_0:
         seq_list_0.append(dna_seq)
         filename_list_0.append(input_file)
 
-folder_path_1 = '/home/yunpei/probiotics/dataset/test1'
+folder_path_1 = '/home/yunpei/probiotics/dataset/longest_nonpro_lacto'
 label_1 = 1
 dirs_1 = [path for path in sorted(os.listdir(folder_path_1))]
 seq_list_1 = []
@@ -229,6 +213,17 @@ for input_file in dirs_1:
         seq_list_1.append(dna_seq)
         filename_list_1.append(input_file)
 
+# folder_path_2 = '/home/yunpei/probiotics/dataset/longest_other_probiotics'
+# label_2 = 2
+# dirs_2 = [path for path in sorted(os.listdir(folder_path_2))]
+# seq_list_2 = []
+# filename_list_2 =[]
+# for input_file in dirs_2:
+# # for input_file in dirs:
+#     with open(os.path.join(folder_path_2, input_file)) as seqs:
+#         dna_seq = seqs.read()
+#         seq_list_2.append(dna_seq)
+#         filename_list_2.append(input_file)
 
 import multiprocessing as mp
 from multiprocessing import Pool, Queue, Manager, Process
@@ -311,24 +306,11 @@ def process_feat(seq_list, filename_list):
     return list(feat_str_list)
 
 
-probio_feat_list = process_feat(seq_list_0, filename_list_0)
-nonprobio_feat_list = process_feat(seq_list_1, filename_list_1)
+pro_lacto_list = process_feat(seq_list_0, filename_list_0)
+nonpro_lacto_list = process_feat(seq_list_1, filename_list_1)
 
-with open('/home/yunpei/probiotics/model1/test.tsv', 'w') as f:
-    for feat_str in probio_feat_list:
+with open('./model3/test.tsv', 'w') as f:
+    for feat_str in pro_lacto_list:
         f.write(str(label_0) + '\t' + feat_str + '\n')
-    for feat_str in nonprobio_feat_list:
+    for feat_str in nonpro_lacto_list:
         f.write(str(label_1) + '\t' + feat_str + '\n')
-
-# import random
-# with open('result_2-5_1012.tsv', 'r') as f:
-#     lines = f.readlines()
-#     random.shuffle(lines)
-#     split_point = int(0.8 * len(lines))
-#     train_data = lines[:split_point]
-#     test_data = lines[split_point:]
-
-# with open('train_data_2-5_withoutN.tsv', 'w') as f1:
-#     f1.writelines(train_data)
-# with open('test_data.tsv_2-5_withoutN.tsv', 'w') as f2:
-#     f2.writelines(test_data) 

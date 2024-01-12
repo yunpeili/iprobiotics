@@ -69,7 +69,7 @@ def feat_num_try(f_tuple):
 		if f_tuple[i][1] < 1e-20:
 			i=i-1; break
 	#only take first eight numbers (>1%)
-	return feat_num_try_half(i+1)[:8]
+	return feat_num_try_half(len(f_tuple)+1)
 
 
 def random_shuffle(label, sample):
@@ -103,7 +103,7 @@ def cal_feat_imp(label,sample):
 	score_dict=cal_Fscore(label,sample)
 
 	score_tuples = list(score_dict.items())
-	score_tuples.sort(key = value_cmpf)
+	# score_tuples.sort(key = value_cmpf)
 
 	feat_v = score_tuples
 	for i in range(len(feat_v)): feat_v[i]=score_tuples[i][0]
@@ -265,7 +265,7 @@ def main():
 	print("read done")
 
 	### Randomly shuffle data
-	random_shuffle(train_label, train_sample)
+	# random_shuffle(train_label, train_sample)
 
 
 	###calculate f-score of whole training data
@@ -277,8 +277,8 @@ def main():
 
 	###write (sorted) f-score list in another file
 	f_tuples = list(whole_fsc_dict.items())
-	f_tuples.sort(key = value_cmpf)
-	fd = open("%s.fscore"%train_file, 'w')
+	# f_tuples.sort(key = value_cmpf)
+	fd = open("./model3/%s.fscore"%train_file, 'w')
 	for t in f_tuples:
 		fd.write("%d: \t%.6f\n"%t)
 	fd.close()
@@ -342,7 +342,7 @@ def main():
 	# REMOVE INTERMEDIATE TEMPORARY FILE: training file after selection
 	rem_file(tr_sel_name)
 	rem_file("%s.out"%tr_sel_name)
-	rem_file("%s.png"%tr_sel_name)
+	# rem_file("%s.png"%tr_sel_name)
 
 
 	### do testing 
@@ -395,12 +395,12 @@ def predict_all():
 	train_label, train_sample, max_index = readdata(train_pathfile)
 	test_label, test_sample, m = readdata(test_pathfile)
 
-	random_shuffle(train_label, train_sample)
+	# random_shuffle(train_label, train_sample)
 
 	###whole_fsc_dict, ordered_feats = cal_feat_imp(train_label,train_sample)
 	ordered_feats = whole_imp_v
 	f_tuples = whole_fsc_dict.items()
-	f_tuples.sort(key = value_cmpf)
+	# f_tuples.sort(key = value_cmpf)
 
 	fnum_v = feat_num_try(f_tuples) #ex: [50,25,12,6,3,1]
 
@@ -557,7 +557,7 @@ def writedata(samples,labels,filename):
 
 arg_process()
 
-initlog("%s.select"%train_file)
+initlog("./model3/%s.select"%train_file)
 writelog("start: %s\n\n"%datetime.now())
 main()
 
