@@ -5,4 +5,4 @@ Also please check https://www.csie.ntu.edu.tw/~cjlin/libsvm/ for the instruction
 
 For dataset of sequences used for the 3 models, please refer to https://huggingface.co/datasets/liyunpei/probiotic_sequence. 
 
-Sorry about the mess of the code here, if you are interested in or have question about this work by any chance, please don't hesitate to raise my attention by any means.
+Sorry about the mess of the code here, if you are interested in or have question about this work by any chance, please don't hesitate to raise my attention in any ways.
